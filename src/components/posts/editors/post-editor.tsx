@@ -1,29 +1,43 @@
 "use client";
 
+import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { StarterKit } from "@tiptap/starter-kit";
-import { Placeholder } from "@tiptap/extension-placeholder";
-import { submitPost } from "../actions";
+import StarterKit from "@tiptap/starter-kit";
+import { useSubmitPostMutation } from "./mutations";
+import "./styles.css";
 import { useSession } from "@/app/(main)/session-provider";
 import UserAvatar from "@/components/user-avatar";
-import { Button } from "@/components/ui/button";
-import "./styles.css";
+import ButtonLoading from "@/components/btn-loading";
 
 export default function PostEditor() {
   const { user } = useSession();
+
+  const mutation = useSubmitPostMutation();
+
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ bold: false, italic: false }),
-      Placeholder.configure({ placeholder: "What's on your mind?" }),
+      StarterKit.configure({
+        bold: false,
+        italic: false,
+      }),
+      Placeholder.configure({
+        placeholder: "What's crack-a-lackin'?",
+      }),
     ],
   });
 
-  const input = editor?.getText({ blockSeparator: "\n" }) || "";
+  const input =
+    editor?.getText({
+      blockSeparator: "\n",
+    }) || "";
 
-  const submit = async () => {
-    await submitPost(input);
-    editor?.commands.clearContent();
-  };
+  function onSubmit() {
+    mutation.mutate(input, {
+      onSuccess: () => {
+        editor?.commands.clearContent();
+      },
+    });
+  }
 
   return (
     <div className="flex flex-col gap-5 rounded-2xl bg-card p-5 shadow-sm">
@@ -31,13 +45,18 @@ export default function PostEditor() {
         <UserAvatar avatarUrl={user.avatarUrl} className="hidden sm:inline" />
         <EditorContent
           editor={editor}
-          className="max-h-[20rem] w-full overflow-y-auto rounded-2xl border-0 bg-background px-5 py-3 outline-0"
+          className="max-h-[20rem] w-full overflow-y-auto rounded-2xl bg-background px-5 py-3"
         />
       </div>
       <div className="flex justify-end">
-        <Button onClick={submit} disabled={!input.trim()} className="min-w-20">
+        <ButtonLoading
+          onClick={onSubmit}
+          loading={mutation.isPending}
+          disabled={!input.trim()}
+          className="min-w-20"
+        >
           Post
-        </Button>
+        </ButtonLoading>
       </div>
     </div>
   );
